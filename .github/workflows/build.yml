@@ -1,0 +1,42 @@
+name: Build Pre-compiled Executables
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: FractalFontCompiler-Linux
+            build_cmd: g++ -std=c++2b -O3 *.cpp -o FractalFontCompiler
+          - os: macos-latest
+            artifact_name: FractalFontCompiler-macOS
+            build_cmd: clang++ -std=c++2b -O3 *.cpp -o FractalFontCompiler
+          - os: windows-latest
+            artifact_name: FractalFontCompiler-Windows.exe
+            build_cmd: cl /std:c++latest /EHsc /O2 *.cpp /Fe:FractalFontCompiler.exe
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC Compiler (Windows Only)
+        if: matrix.os == 'windows-latest'
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Compile the Engine
+        run: ${{ matrix.build_cmd }}
+
+      - name: Upload Finished Executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: FractalFontCompiler*
